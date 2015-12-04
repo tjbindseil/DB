@@ -1,0 +1,78 @@
+
+     $(function() {
+		var baseURL = "../../social/";
+		var data = new Object();
+         $('a#facebook_social_share').click( function() {
+          //    console.log(baseURL);
+              var socialMedia = 0; // 0 in database means the social media was facebook
+              var sharedLink = "https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.codaworx.com%2Fproject%2Fgenography-arts-kc-regional-arts-council";
+			  data.socialMedia = socialMedia;
+			  data.sharedLink = sharedLink;	  
+			  $.ajax(baseURL+"record", {
+				method: "POST",
+				data: $.param(data),
+				success: function(data){
+					console.log("recordedSocialInteraction return SUCCESS:");
+			//		console.log(data);
+				},
+				error: function(data){console.log("error recording social interaction");}
+			});
+			 window.open(sharedLink, '_blank');
+             return true;
+         });
+          $('a#twitter_social_share').click( function() {
+              var socialMedia = 1;
+              var sharedLink = "https://twitter.com/share?url=https%3A%2F%2Fwww.codaworx.com%2Fproject%2Fgenography-arts-kc-regional-arts-council";
+			  data.socialMedia = socialMedia;
+			  data.sharedLink = sharedLink;
+			  
+			  $.ajax(baseURL+"record", {
+				method: "POST",
+				data: $.param(data),
+				success: function(data){
+					console.log("recordedSocialInteraction return SUCCESS:");
+			//		console.log(data);
+				},
+				error: function(data){console.log("error recording social interaction");}
+			});
+			  window.open(sharedLink, '_blank');
+              return true;
+         });
+          $('a#pinterest_social_share').click( function() {
+              var socialMedia = 2;
+              var sharedLink = "https://www.pinterest.com/pin/create/button/?url=https%3A%2F%2Fwww.codaworx.com%2Fproject%2Fgenography-arts-kc-regional-arts-council&description=Genography&media=https%3A%2F%2Fres.cloudinary.com%2Fcodaworx%2Fimage%2Fupload%2Fv1400510474%2Fproject%2Fdarin-and-shannon-white-genography-arts-kc-angledweb.jpg";
+			  data.socialMedia = socialMedia;
+			  data.sharedLink = sharedLink;
+			  
+			  $.ajax(baseURL+"record", {
+				method: "POST",
+				data: $.param(data),
+				success: function(data){
+					console.log("recordedSocialInteraction return SUCCESS:");
+				//	console.log(data);
+				},
+				error: function(data){console.log("error recording social interaction");}
+			});
+              window.open(sharedLink, '_blank');
+              return true;
+         });
+          $('a#google_social_share').click( function() {
+              var socialMedia = 3;
+              var sharedLink = "https://plus.google.com/share?url=https%3A%2F%2Fwww.codaworx.com%2Fproject%2Fgenography-arts-kc-regional-arts-council";
+			  data.socialMedia = socialMedia;
+			  data.sharedLink = sharedLink;
+			  
+			  $.ajax(baseURL+"record", {
+				method: "POST",
+				data: $.param(data),
+				success: function(data){
+					console.log("recordedSocialInteraction return SUCCESS:");
+			//		console.log(data);
+				},
+				error: function(data){console.log("error recording social interaction");}
+			});
+			  window.open(sharedLink, '_blank');
+              return true;
+         });
+     });
+ 
