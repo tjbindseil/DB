@@ -1,5 +1,4 @@
 <?php
-require_once ("config/config.php");
 class DB_Connections
 {
 		
@@ -25,11 +24,11 @@ class DB_Connections
 			 $success = true;
 		 } catch(Exception $e) {
 			 $success = false;
-		//	 $arrReturn['error'] = $e->getMessage();
+			 $arrReturn['error'] = $e->getMessage();
 		 }
-	//	 $arrReturn['success'] = $success;
-	//	 $arrReturn['DBO'] = $db;
-		 return $db;
+		 $arrReturn['success'] = $success;
+		 $arrReturn['DBO'] = $db;
+		 return $arrReturn;
 	}	
 }
 

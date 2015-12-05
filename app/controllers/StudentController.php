@@ -1,16 +1,12 @@
 <?php
 // TODO: login and logout need work
 
-class UserController{
-		
-	private $id;
-	private $fName; // 0 = fratmember, 1 = chef, 2 = admin
-	private $lName;
-	private $studentID;
-	private $locationID;
+class StudentController{
+
+	private $studentModel;
 	
 	public function __construct() {
-		$this->studentModel = new studentModel();
+		$this->studentModel = new StudentModel();
 	}
 	
 	public function __destruct() {
@@ -18,6 +14,73 @@ class UserController{
 		// close the database connection
 		$this->studentModel = null;
 	}
+	
+	public function hello() {
+		return $this->studentModel->hello();
+	}
+	
+	public function getAllStudents() {
+		$arrResult = $this->studentModel->getAllStudents();
+		if($arrResult['success']) {
+			// successfully added student
+		}
+		else {
+			// there was an error
+			print_r($arrResult);
+		}
+		return json_encode($arrResult);
+	}
+	
+	public function updateStudent() {
+		$arrValues = array();
+		foreach ($_REQUEST as $key => $value) { /// can i do this?
+			$arrValues[$key] = $value;
+		}
+		$arrResult = $this->studentModel->updateStudent($arrValues); // may need to specify specific indices of $arValues
+		if($arrResult['success']) {
+			// successfully added student
+		}
+		else {
+			// there was an error
+			print_r($arrResult);
+		}
+		return $arrResult;
+	}
+	
+	public function deleteStudent() {
+		$id = $_REQUEST['id'];
+		$arrResult = $this->studentModel->deleteStudent($id); // may need to specify specific indices of $arValues
+		if($arrResult['success']) {
+			// successfully added student
+		}
+		else {
+			// there was an error
+			print_r($arrResult);
+		}
+		return json_encode($arrResult);
+	}
+	
+	public function addStudent() {
+		$arrValues = array();
+//		$arrValues['id'] = $_REQUEST['id'];
+		$arrValues['fName'] = $_REQUEST['fName'];
+		$arrValues['lName'] = $_REQUEST['lName'];
+		$arrValues['studentID'] = $_REQUEST['studentID'];
+		$arrValues['town'] = $_REQUEST['town'];
+		$arrValues['state'] = $_REQUEST['state'];
+		$arrResult = $this->studentModel->addStudent($arrValues); // may need to specify specific indices of $arValues
+		if($arrResult['success']) {
+			// successfully added student
+		}
+		else {
+			// there was an error
+			print_r($arrResult);
+		}
+		return $arrResult;
+	}
+	
+}
+
 	/*
 	public function login() {
 		$arrValues = array();
@@ -74,67 +137,5 @@ class UserController{
 		}
 	}
 	*/
-	
-	public function getAllStudents() {
-		$arrResult = $this->studentModel->getAllStudents();
-		if($arrResult['success']) {
-			// successfully added student
-		}
-		else {
-			// there was an error
-			print_r($arrResult);
-		}
-		return json_encode($arrResult);
-	}
-	
-	public function updateStudent() {
-		$arrValues = array();
-		foreach ($_REQUEST as $key => $value) { /// can i do this?
-			$arrValues[$key] = $value;
-		}
-		$arrResult = $this->studentModel->updateStudent($arrValues); // may need to specify specific indices of $arValues
-		if($arrResult['success']) {
-			// successfully added student
-		}
-		else {
-			// there was an error
-			print_r($arrResult);
-		}
-		return json_encode($arrResult);
-	}
-	
-	public function deleteStudent() {
-		$id = $_REQUEST['id'];
-		$arrResult = $this->studentModel->deleteStudent($id); // may need to specify specific indices of $arValues
-		if($arrResult['success']) {
-			// successfully added student
-		}
-		else {
-			// there was an error
-			print_r($arrResult);
-		}
-		return json_encode($arrResult);
-	}
-	
-	public function addStudent() {
-		$arrValues = array();
-//		$arrValues['id'] = $_REQUEST['id'];
-		$arrValues['fName'] = $_REQUEST['fName'];
-		$arrValues['lName'] = $_REQUEST['lName'];
-		$arrValues['studentID'] = $_REQUEST['studentID'];
-		$arrValues['town'] = $_REQUEST['town'];
-		$arrValues['state'] = $_REQUEST['state'];
-		$arrResult = $this->studentModel->addStudent($arrValues); // may need to specify specific indices of $arValues
-		if($arrResult['success']) {
-			// successfully added student
-		}
-		else {
-			// there was an error
-			print_r($arrResult);
-		}
-		return json_encode($arrResult);
-	}
-	
-
 
 ?>

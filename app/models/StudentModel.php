@@ -1,20 +1,270 @@
 <?php
-require_once('DB_Connection.php');
 	// id | username | password | email | userRole | orgId
 	//TODO: get true/false if user_id is in org_id
 class StudentModel{
 			
 	private $dbo;
+	private $arr;
 	
 	 public function __construct() {
 			$db = new DB_Connections();
-			$this->dbo = $db->getNewDBO();
+			$arr = $db->getNewDBO();
+			$this->dbo = $arr['DBO'];
+			$this->arr = $arr;
+	 }
+	 
+	 public function hello() {
+		 return $this->arr;
 	 }
 
 	public function __destruct() {
 		$this->dbo = null;
 	}
 	
+	public function getAllStudents() {
+		$arrResult = array();
+		$success = false; 
+		try {
+			$STH = $this->dbo->prepare("SELECT * FROM students as S INNER JOIN location as L ON S.locationID = L.id");
+			$STH->execute();
+			$fetch = $STH->fetchAll(PDO::FETCH_ASSOC);
+			$success = true;
+		} catch (Exception $e) {
+			$success = false;
+			$arrResult['error'][] = true;
+		}
+		$arrResult['success'] = $success;
+		$arrResult['fetchStudentsArr'][] = $fetch;
+		return $arrResult;
+	}
+	
+	
+	public function updateStudent($arrValues) {
+		$arrResult = array();
+		$arrResult['sql'] = array();
+		$id = $arrValues['id']; // not changable
+	/*	$fName = $arrValues['fName'];
+		$lName = $arrValues['lName'];    ALL COULD THROW EXCEPTIONS
+		$studentID = $arrValues['studentID'];    
+		$town = $arrValues['town'];
+		$state = $arrValues['state'];
+		*/
+		$success = false;
+		$sql = "UPDATE students SET ";
+		$index = 0;
+		$data = array();
+		$needToBeUpdated = false;
+
+		if (isset($arrValues['fName'])) {
+			 $fName = $arrValues['fName'];
+			 $sql = $sql . "fName=?, ";
+			 $data[$index] = $fName;
+			 $index = $index + 1;
+			 $needToBeUpdated = true;
+		}
+		if (isset($arrValues['lName'])) {
+			 $lName = $arrValues['lName'];
+			 $sql = $sql . "lName=?, ";
+			 $data[$index] = $lName;
+			 $index = $index + 1;		
+			 $needToBeUpdated = true;
+		}
+		if (isset($arrValues['studentID'])) { // can you compare ints?
+			 $studentID = $arrValues['studentID'];
+			 $sql = $sql . "studentID=?, ";
+			 $data[$index] = $studentID;
+			 $index = $index + 1;
+			 $needToBeUpdated = true;
+		}
+		
+		if ($needToBeUpdated) {
+			
+			//get rid of last two chars in sql string
+			$sql = substr($sql,0,-2);
+			$sql = $sql . " WHERE id=?";
+			$data[$index] = $id;
+			$arrResult['sql'][] = $sql;
+			try {
+				 $STH = $this->dbo->prepare($sql);
+				 $arrResult['db_result'] = $STH->execute($data); //?
+				 $success = true;
+			} catch (Exception $e) {
+				$arrResult['error'] = $e->getMessage();
+				$success = false;
+			}	
+			// have to do different stuff for town and state because in location table
+			
+		}
+		
+		if(isset($arrValues['town']) || isset($arrValues['state'])) {
+			$sql = "SELECT locationID FROM students where id=:id";
+			try {
+				$STH = $this->dbo->prepare($sql);
+				$STH->bindParam(":id", $id);
+				$STH->execute();		
+				$fetch = $STH->fetch(PDO::FETCH_ASSOC);   // fetch has location id
+			} catch (Exception $e) {
+				$arrResult['success'] = false;
+				$arrResult['error'][] = $e->getMessage();
+			}
+			$arrResult['sql'][] = $sql;
+			
+			$locationID = $fetch['locationID'];
+			$sql = "UPDATE location SET ";
+			$index = 0;
+			$data = array();
+			
+			if (isset($arrValues['town'])) {
+				 $town = $arrValues['town'];
+				 $sql = $sql . "town=?, ";
+				 $data[$index] = $town;
+				 $index = $index + 1;
+			}
+			if (isset($arrValues['state'])) {
+				 $state = $arrValues['state'];
+				 $sql = $sql . "state=?, ";
+				 $data[$index] = $state;
+				 $index = $index + 1;
+			}
+			
+			//get rid of last two chars in sql string
+			$sql = substr($sql,0,-2);
+			$sql = $sql . " WHERE id=?";
+			$data[$index] = $locationID;
+			$arrResult['sql'][] = $sql;
+			try {
+				 $STH = $this->dbo->prepare($sql);
+				 $arrResult['db_result'] = $STH->execute($data); 
+				 $success = true;
+			} catch (Exception $e) {
+				$arrResult['error'] = $e->getMessage();
+				$success = false;
+			}	
+		}	
+		$arrResult['success'] = $success;
+		return $arrResult;
+	}
+	
+	
+	public function deleteStudent($id) {
+		$arrResult = array();
+		$success = false;
+		try { //// do i need array right below this comment?
+			$STH = $this->dbo->prepare("DELETE FROM students WHERE id =:id");
+			$STH->bindParam(":id", $id);
+			$STH->execute();
+			$success = true;
+		} catch (Exception $e) {
+			$succes = false;
+			$arrResult['error'][] = $e->getMessage();
+		}
+		$arrResult['succes'] = $succes;
+		return $arrResult;
+	}
+	
+	public function addStudent($arrValues) {
+		$arrResult = array();
+		$success = false;
+//		$id = $arrValues['id']; // may not need thanks to AI
+		$fName = $arrValues['fName'];
+		$lName = $arrValues['lName'];
+		$studentID = $arrValues['studentID'];
+		//$locationID = $arValues['locationID']; must use town and state incase location is not in table
+		// checking if user is in database
+		$town = $arrValues['town'];
+		$state = $arrValues['state'];
+		$boolValidUsername = false;
+		try {
+			$STH = $this->dbo->prepare("SELECT * FROM students where studentID=:studentID"); // why not "$" dbo?
+			$STH->bindParam(":studentID", $studentID);
+			$STH->execute();
+			$fetch = $STH->fetch(PDO::FETCH_ASSOC); // should do the same as fetch because max 1 user
+			if(count($fetch) > 1) {
+				// user exists and $fetch is non empty
+				$boolValidUsername = false;
+				$arrResult['error'][] = "the user is already in the database";
+			} else {
+				$boolValidUsername = true;
+			}
+		} catch (Exception $e) {
+			$arrResult['error'][] = $e->getMessage();
+			$boolValidUsername = false;
+		}
+		// finished checking db for user
+		if (!boolValidUsername) {
+			$arrResult['success'] = false;
+			return $arrResult;
+		}
+		// method would have returned if problems occured, so now time to add in
+		// but first we need to get location id
+		$arrLocation = $this->getLocationID($town, $state);
+		$locationID = $arrLocation['id'];
+		$arrResult['loc'] = $locationID;
+		try {
+			$data = array('fName' => $fName, 'lName' => $lName, 'studentID' => $studentID, 'locationID' => $locationID);
+			$STH = $this->dbo->prepare("INSERT INTO students VALUES (NULL, :fName, :lName, :studentID, :locationID)"); // concatinating on a new line?
+			$STH->execute($data);
+			$success = true;
+		} catch(Exception $e) {
+			$success = false;
+			$arrResult['error'][] = $e->getMessage() . " sdfgsdfgsd";
+		}
+		$arrResult['success'] = $success;
+		// can add further values for debug
+		return $arrResult;
+	}
+	
+	private function getLocationID($town, $state) {
+		$arrResult = array();
+		$arrResult['success'] = true;
+		try {
+			$STH = $this->dbo->prepare("SELECT * FROM location where town=:town AND state=:state");
+			$STH->bindParam(":town", $town);
+			$STH->bindParam(":state", $state);
+			$STH->execute();
+			$fetch = $STH->fetch(PDO::FETCH_ASSOC);
+			$succes = true;
+		} catch (Exception $e) {
+			$arrResult['error'][] = $e->getMessage();
+			$arrResult['success'] = false;
+		}
+		if (count($fetch) > 1) {
+			$arrResult['id'] = $fetch['id']; // might need specific index of fetch
+		} else {
+			try {
+				$data = array('town' => $town, 'state' => $state);
+				$STH = $this->dbo->prepare("INSERT INTO location VALUES (NULL, :town, :state)");
+				$STH->execute($data);
+			} catch (Exception $e) {
+				$arrResult['error'][] = $e->getMessage();
+				$arrResult['success'] = false;
+			} // now location has been inserted
+			$table = "location";
+			$mostRecent = $this->getMostRecent($table);
+			$arrResult['id'] = $mostRecent['id'];
+		}
+		return $arrResult;
+	}
+	private function getMostRecent($table) {
+		$arrResult = array();
+		try {
+			$STH = $this->dbo->prepare("SELECT * FROM ".$table." ORDER BY id Desc Limit 1"); 
+			// ???? $STH->bindParam()
+			$STH->execute();
+		} catch (Exception $e) {
+			$arrResult['success'] = false;
+			$arrResult['error'][] = $e->getMessage();
+		}
+		$fetch = $STH->fetch(PDO::FETCH_ASSOC);
+		$arrResult['id'] = $fetch['id'];
+		return $arrResult;
+	}
+	
+}
+
+
+
+
 	/**
 		expected input: 
 		$arrValues = array( 
@@ -290,233 +540,4 @@ class StudentModel{
 	
 	*/
 	
-	public function getAllStudents() {
-		$arrResult = array();
-		$success = false; 
-		try {
-			$STH = $this->dbo->prepare("SELECT * FROM students as S INNER JOIN location as L ON S.locationID = L.id");
-			$STH->execute();
-			$fetch = $STH->fetchAll(PDO::FETCH_ASSOC);
-			$success = true;
-		} catch (Exception $e) {
-			$succes = false;
-			$arrResult['error'][] = true;
-		}
-		$arrResult['success'] = $success;
-		$arrResult['fetchStudentsArr'][] = $fetch;
-	}
-	
-	
-	public function updateStudent($arrValues) {
-		$arrResult = array();
-		$id = $arrValues['id']; // not changable
-	/*	$fName = $arrValues['fName'];
-		$lName = $arrValues['lName'];    ALL COULD THROW EXCEPTIONS
-		$studentID = $arrValues['studentID'];    
-		$town = $arrValues['town'];
-		$state = $arrValues['state'];
-		*/
-		$success = false;
-		$sql = "UPDATE students SET ";
-		$index = 0;
-		$data = array();
-
-		if (isset($arrValues['fName'])) {
-			 $fName = $arrValues['fName'];
-			 $sql = $sql . "fName=?, ";
-			 $data[$index] = $fName;
-			 $index = $index + 1;
-		}
-		if (isset($arrValues['lName'])) {
-			 $lName = arrValues['lName'];
-			 $sql = $sql . "lName=?, ";
-			 $data[$index] = $lName;
-			 $index = $index + 1;
-		}
-		if (isset($arrValues['studentID'])) { // can you compare ints?
-			 $studentID = arrValues['studentID'];
-			 $sql = $sql . "studentID=?, ";
-			 $data[$index] = $studentID;
-			 $index = $index + 1;
-		}
-		
-		//get rid of last two chars in sql string
-		$sql = substr($sql,0,-2);
-		$sql = $sql . " WHERE id=?";
-		$data[$index] = $id;
-		try {
-			 $STH = $this->dbo->prepare($sql);
-			 $arrResult['db_result'] = $STH->execute($data); //?
-			 $success = true;
-		} catch (Exception $e) {
-			$arrResult['error'] = $e->getMessage();
-			$success = false;
-		}	
-		// have to do different stuff for town and state because in location table
-		
-		if(isset($arrValues['town']) || isset($arrValues['state']) {
-			$sql = "SELECT locationID FROM students where id=:id";
-			try {
-				$STH = $this->dbo->prepare($sql);
-				$STH->bindParam(":id", $id);
-				$STH->execute();		
-				$fetch = $STH->fetch(PDO::FETCH_ASSOC);   // fetch has location id
-			} catch (Exception $e) {
-				arrResult['success'] = false;
-				arrResult['error'][] = $e->getMessage();
-			}
-			
-			
-			
-			$sql = "UPDATE location SET ";
-			$index = 0;
-			$data = array();
-			
-			if (isset($arrValues['town'])) {
-				 $town = arrValues['town'];
-				 $sql = $sql . "town=?, ";
-				 $data[$index] = $town;
-				 $index = $index + 1;
-			}
-			if (isset($arrVAlues['state'])) {
-				 $state = arrValues['state'];
-				 $sql = $sql . "state=?, ";
-				 $data[$index] = $state;
-				 $index = $index + 1;
-			}
-			
-			//get rid of last two chars in sql string
-			$sql = substr($sql,0,-2);
-			$sql = $sql . " WHERE id=?";
-			$data[$index] = $fetch['locationID'];
-			
-			try {
-				 $STH = $this->dbo->prepare($sql);
-				 $arrResult['db_result'] = $STH->execute($data); //?
-				 $success = true;
-			} catch (Exception $e) {
-				$arrResult['error'] = $e->getMessage();
-				$success = false;
-			}	
-		}	
-		$arrResult['success'] = $success;
-		return $arrResult;
-	}
-	
-	
-	public function deleteStudent($id) {
-		$arrResult = array();
-		$success = false;
-		try { //// do i need array right below this comment?
-			$STH = $this->dbo->prepare("DELETE FROM students WHERE id =:id");
-			$STH->bindParam(":id", $id);
-			$STH->execute();
-			$success = true;
-		} catch (Exception $e) {
-			$succes = false;
-			$arrResult['error'][] = $e->getMessage();
-		}
-		$arrResult['succes'] = $succes;
-		return $arrResult;
-	}
-	
-	public function addStudent($arrValues) {
-		$arrResult = array();
-		$success = false;
-//		$id = $arrValues['id']; // may not need thanks to AI
-		$fName = $arrValues['fName'];
-		$lName = $arrValues['lName'];
-		$studentID = $arrValus['studentID'];
-		//$locationID = $arValues['locationID']; must use town and state incase location is not in table
-		// checking if user is in database
-		$town = $arrValues['town'];
-		$state = $arrValues['state'];
-		$boolValidUsername = false;
-		try {
-			$STH = $this->dbo->prepare("SELECT * FROM students wehre studentID=:studentID"); // why not "$" dbo?
-			$STH->bindParam(":studentID", $studentID);
-			$STH->execute();
-			$fetch = $STH->fetchAll(PDO::FETCH_ASSOC); // should do the same as fetch because max 1 user
-			if(isArray($fetch)) {
-				// user exists and $fetch is non empty
-				$boolValidUsername = false;
-				$arrResult['error'][] = "the user is already in the database";
-			} else {
-				$boolValidUsername = true;
-			}
-		} catch (Exception $e) {
-			$arrResult['error'][] = $e->getMessage();
-			$boolValidUsername = false;
-		}
-		// finished checking db for user
-		if (!boolValidUsername) {
-			$arrResult['success'] = false;
-			return $arrResult;
-		}
-		// method would have returned if problems occured, so now time to add in
-		// but first we need to get location id
-		$arrLocation = $this->getLocationID($town, $state);
-		$locationID = $arrLocation['id'];
-		try {
-			$data = array('fName' => $fName, 'lName' => $lName, 'studentID' => $studentID, 'locationID' => $locationID);
-			$STH = $this->dbo->prepare("INSERT INTO students VALUES (NULL, :fName, :lName, :studentID, :locationID)"); // concatinating on a new line?
-			$STH->execute($data);
-			$success = true;
-		} catch(Exception $e) {
-			$success = false;
-			$arrResult['error'][] = $e->getMessage();
-		}
-		$arrResult['success'] = $success;
-		// can add further values for debug
-		return $arrResult;
-	}
-	
-	private function getLocationID($town, $state)) {
-		$arrResult = array();
-		$arrResult['success'] = true;
-		try {
-			$STH = $this->dbo->prepare("SELECT * FROM location where town=:town AND state=:state");
-			$STH->bindParam(":town", $town);
-			$STH->bindParam(":state", $state);
-			$STH->execute();
-			$fetch = $STH->fetch(PDO::FETCH_ASSOC);
-			$succes = true;
-		} catch (Exception $e) {
-			$arrResult['error'][] = $e->getMessage();
-			$arrResult['success'] = false;
-		}
-		if (isArray($fetch)) {
-			$arrResult['id'] = $fetch['id']; // might need specific index of fetch
-		} else {
-			try {
-				$data = array('town' => $town, 'state' => $state);
-				$STH = $this->dbo->prepare("INSERT INTO location VALUES (NULL, :town, :state");
-				$STH->execute($data);
-			} catch (Exception $e) {
-				$arrResult['error'][] = $e->getMessage();
-				$arrResult['success'] = false;
-			} // now location has been inserted
-			$table = "location";
-			$mostRecent = $this->getMostRecent($table);
-			$arrResult['id'] = $mostRecent['id'];
-		}
-		return $arrResult;
-	}
-	private function getMostRecent($table) {
-		$arrResult = array();
-		try {
-			$STH = $this->dbo->prepare("SELECT * FROM ".$table." ORDER BY id Desc Limit 1"); 
-			// ???? $STH->bindParam()
-			$STH->execute();
-		} catch (Exception $e) {
-			$arrResult['success'] = false;
-			$arrResult['error'][] = $e->getMessage();
-		}
-		$fetch = $STH->fetch(PDO::FETCH_ASSOC):
-		$arrResult['id'] = fetch['id'];
-		return arrResult;
-	}
-	
-}
-
 ?>
